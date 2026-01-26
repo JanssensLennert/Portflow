@@ -1,0 +1,127 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider   = "prisma-client"
+  engineType = "client"
+  output     = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  User
+  Admin
+}
+
+model User {
+  id       String @id @default(uuid()) @db.Uuid
+  email    String @unique @db.VarChar(255)
+  password String
+  username String @unique @db.VarChar(255)
+  role     Role   @default(User)
+
+  sessions  Session[]
+  wishlists Wishlist[]
+  lps       LP[]
+  genres    Genre[]
+
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id          String   @id @default(uuid()) @db.Uuid
+  activeFrom  DateTime @default(now())
+  activeUntil DateTime
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Artiest {
+  id       String @id @default(uuid()) @db.Uuid
+  name     String
+  imageUrl String?
+
+  lps    LP[]
+  tracks Track[]
+}
+
+model Genre {
+  id     String  @id @default(uuid()) @db.Uuid
+  name   String
+  userId String? @db.Uuid
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  lps LP[]
+
+  @@unique([userId, name])
+}
+
+model Label {
+  id   String @id @default(uuid()) @db.Uuid
+  name String @unique
+
+  lps LP[]
+}
+
+model Condition {
+  id          String @id @default(uuid()) @db.Uuid
+  name        String @unique
+  description String
+
+  createdAt DateTime @default(now())
+}
+
+model LP {
+  id        String  @id @default(uuid()) @db.Uuid
+  title     String
+  year      Int
+  condition String
+  coverUrl  String
+  notes     String?
+
+  artistId String  @db.Uuid
+  artist   Artiest @relation(fields: [artistId], references: [id])
+
+  labelId String @db.Uuid
+  label   Label  @relation(fields: [labelId], references: [id])
+
+  userId String? @db.Uuid
+  user   User?  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  genres    Genre[]
+  tracks    Track[]
+  wishlists Wishlist[]
+
+  createdAt DateTime @default(now())
+}
+
+model Track {
+  id       String @id @default(uuid()) @db.Uuid
+  title    String
+  duration Int
+
+  lpId String @db.Uuid
+  lp   LP     @relation(fields: [lpId], references: [id], onDelete: Cascade)
+
+  artistId String  @db.Uuid
+  artist   Artiest @relation(fields: [artistId], references: [id])
+}
+
+model Wishlist {
+  id String @id @default(uuid()) @db.Uuid
+
+  userId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id])
+
+  lps LP[]
+
+  createdAt DateTime @default(now())
+}
